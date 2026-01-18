@@ -54,23 +54,42 @@ class AgentState:
 
 def select_action_eps_greedy(state: AgentState, rng: np.random.Generator, epsilon: float) -> int:
     """TODO: epsilon-greedy action selection."""
-    raise NotImplementedError
+    if rng.random() < epsilon:
+        # Exploration
+        action = rng.integers(0, len(state.q_est))
+    else:
+        # Exploitation
+        max_q = np.max(state.q_est)
+        candidates = np.flatnonzero(state.q_est == max_q)
+        action = rng.choice(candidates)
+    return int(action)
 
 
 def update_sample_average(state: AgentState, action: int, reward: float) -> None:
     """TODO: sample-average update for Q."""
-    raise NotImplementedError
+    state.n[action] += 1
+    state.q_est[action] += (reward - state.q_est[action]) / state.n[action]
 
 
 def select_action_ucb(state: AgentState, t: int, c: float) -> int:
     """TODO: UCB action selection."""
-    raise NotImplementedError
+    unvisited = np.flatnonzero(state.n == 0)
+    if unvisited.size > 0:
+        return int(unvisited[0])
+
+    # UCB = Q(a) + c * sqrt(ln(t) / N(a))
+    ucb_values = state.q_est + c * np.sqrt(np.log(t) / state.n)
+    
+    # Select action with max UCB value
+    # Note: np.argmax selects the first occurrence of max value
+    return int(np.argmax(ucb_values))
 
 
 def update_constant_step_size(state: AgentState, action: int, reward: float, alpha: float) -> None:
     """TODO: constant step-size update."""
-    raise NotImplementedError
-
+    state.n[action] += 1
+    # Q(a) <- Q(a) + alpha * (R - Q(a))
+    state.q_est[action] += alpha * (reward - state.q_est[action])
 
 def run_one(algo: AlgoName, *, steps: int, rng: np.random.Generator) -> np.ndarray:
     """Run one bandit instance for `steps` steps.
