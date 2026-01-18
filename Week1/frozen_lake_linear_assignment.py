@@ -67,8 +67,14 @@ def build_random_policy_matrices(env: gym.Env) -> tuple[np.ndarray, np.ndarray]:
     P_pi = np.zeros((nS, nS), dtype=float)
     R_pi = np.zeros((nS,), dtype=float)
 
-    # TODO: fill P_pi and R_pi using P
-    raise NotImplementedError
+    for s in range(nS):
+        for a in range(nA):
+
+            for prob, next_state, reward, terminated in P[s][a]:
+                P_pi[s, next_state] += pi * prob
+                R_pi[s] += pi * prob * reward
+
+    return P_pi, R_pi
 
 
 def solve_value_function(P_pi: np.ndarray, R_pi: np.ndarray, gamma: float) -> np.ndarray:
@@ -93,8 +99,38 @@ def greedy_path_from_value(
 ) -> list[int]:
     """TODO: Greedy path by choosing action that maximizes V[s_next].
     """
-    # TODO: implement using env.unwrapped.P
-    raise NotImplementedError
+    path = [start]
+    curr = start
+    gamma = 0.9  # Follow FrozenLakeSpec
+
+    for _ in range(max_steps):
+        if goal is not None and curr == goal:
+            break
+        
+        best_a = -1
+        max_q = -float("inf")
+
+        for a in range(env.action_space.n):
+            q_val = 0.0
+            for prob, next_s, r, terminated in env.unwrapped.P[curr][a]:
+                q_val += prob * (r + gamma * V[int(next_s)])
+            
+            if q_val > max_q:
+                max_q = q_val
+                best_a = a
+        
+        transitions = env.unwrapped.P[curr][best_a]
+        transitions.sort(key=lambda x: x[0], reverse=True)
+        _, next_s, r, terminated = transitions[0]
+        next_s = int(next_s)
+
+        path.append(next_s)
+        curr = next_s
+
+        if terminated:
+            break
+            
+    return path
 
 
 def pretty_print_value(V: np.ndarray, env: gym.Env) -> None:
@@ -189,6 +225,6 @@ if __name__ == "__main__":
 # Q: (Part 2에서처럼) 선형대수로 연립방정식을 풀어 Bellman 기대 방정식의 해를 구할 수 있습니다.
 #    그렇다면 최적(Optimality) 벨만 방정식도 같은 방식으로 선형 연립방정식으로 풀 수 있을까요?
 #    가능/불가능하다면 그 이유는 무엇인가요?
-# A: 
 #
+# A: 불가능하다. 왜냐하면 최적 벨만 방정식에서 사용하는 max 연산은 선형 연산이 아니기 때문이다. 
 #########################################################
