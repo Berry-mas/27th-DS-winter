@@ -217,3 +217,4 @@ __marimo__/
 
 # Solution files
 *_solution.py
+.DS_Store

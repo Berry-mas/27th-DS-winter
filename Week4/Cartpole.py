@@ -27,7 +27,7 @@ class ReplayBuffer:
         state = torch.from_numpy(np.stack([x[0] for x in data], axis=0)).to(dtype=torch.float32)
         action = torch.from_numpy(np.stack([x[1] for x in data], axis=0)).to(dtype=torch.int32)
         reward = torch.from_numpy(np.stack([x[2] for x in data], axis=0)).to(dtype=torch.float32)
-        next_state = None # TODO
+        next_state = torch.from_numpy(np.stack([x[3] for x in data], axis=0)).to(dtype=torch.float32)
         done = torch.from_numpy(np.stack([x[4] for x in data], axis=0)).to(dtype=torch.float32)
         return state, action, reward, next_state, done
 
@@ -59,7 +59,7 @@ class DQNAgent:
         self.criterion = nn.MSELoss()
 
     def sync_qnet(self):
-        self.qnet_target = None # TODO
+        self.qnet_target.load_state_dict(self.qnet.state_dict())
 
     def get_action(self, state):
         if np.random.rand() < self.epsilon:
@@ -80,7 +80,7 @@ class DQNAgent:
         qs = self.qnet(state) # (B, 2)
         q = qs[torch.arange(self.batch_size), action] # (B,)
         # target 계산
-        next_qs = None # (B, 2) # TODO
+        next_qs = self.qnet_target(next_state) 
         next_q = next_qs.max(dim=1).values.detach() # (B,)
         target = reward + (1 - done) * self.gamma * next_q
         # 학습
@@ -112,7 +112,7 @@ for episode in range(episodes):
         total_reward += reward
 
     if episode % sync_interval == 0:
-        pass # TODO
+        agent.sync_qnet()
 
     reward_history.append(total_reward)
 
